@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh:*)",
+      "Edit(ebirdmcp/**)",
+      "Write(ebirdmcp/**)",
+      "Read(ebirdmcp/**)",
+      "Edit(tests/**)",
+      "Write(tests/**)",
+      "Read(tests/**)",
+      "Edit(pyproject.toml)",
+      "Write(pyproject.toml)",
+      "Read(pyproject.toml)",
+      "Edit(README.md)",
+      "Write(README.md)",
+      "Read(README.md)",
+      "Edit(.gitignore)",
+      "Write(.gitignore)",
+      "Read(.gitignore)",
+      "WebSearch",
+      "WebFetch",
+      "Bash(python:*)",
+      "Bash(pip:*)",
+      "Bash(uv:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(git:*)"
+    ]
+  }
+}
