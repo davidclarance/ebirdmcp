@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 
 from ebirdmcp.client import EBirdClient
 
@@ -13,14 +13,26 @@ mcp = FastMCP(
 )
 
 
-def _get_client() -> EBirdClient:
-    api_key = os.environ.get("EBIRD_API_KEY", "")
-    if not api_key:
-        raise RuntimeError(
-            "EBIRD_API_KEY environment variable is required. "
-            "Get one at https://ebird.org/api/keygen"
-        )
-    return EBirdClient(api_key)
+def _get_api_key(ctx: Context) -> str:
+    request = getattr(ctx.request_context, "request", None)
+    if request is not None:
+        key = getattr(request, "headers", {}).get("x-ebird-api-key")
+        if key:
+            return key
+
+    key = os.environ.get("EBIRD_API_KEY", "")
+    if key:
+        return key
+
+    raise RuntimeError(
+        "eBird API key required. Either pass it via the x-ebird-api-key "
+        "header or set the EBIRD_API_KEY environment variable. "
+        "Get a key at https://ebird.org/api/keygen"
+    )
+
+
+def _get_client(ctx: Context) -> EBirdClient:
+    return EBirdClient(_get_api_key(ctx))
 
 
 def _format(data: object) -> str:
@@ -33,6 +45,7 @@ def _format(data: object) -> str:
 @mcp.tool()
 async def get_recent_observations(
     region_code: str,
+    ctx: Context,
     back: int | None = None,
     cat: str | None = None,
     hotspot: bool | None = None,
@@ -51,7 +64,7 @@ async def get_recent_observations(
         max_results: Max number of results
         spp_locale: Locale for species common names (e.g. "en", "es", "fr")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_observations(
             region_code, back=back, cat=cat, hotspot=hotspot,
@@ -66,6 +79,7 @@ async def get_recent_observations(
 @mcp.tool()
 async def get_recent_notable_observations(
     region_code: str,
+    ctx: Context,
     back: int | None = None,
     detail: str | None = None,
     hotspot: bool | None = None,
@@ -82,7 +96,7 @@ async def get_recent_notable_observations(
         max_results: Max number of results
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_notable_observations(
             region_code, back=back, detail=detail, hotspot=hotspot,
@@ -97,6 +111,7 @@ async def get_recent_notable_observations(
 async def get_recent_species_observations(
     region_code: str,
     species_code: str,
+    ctx: Context,
     back: int | None = None,
     hotspot: bool | None = None,
     include_provisional: bool | None = None,
@@ -114,7 +129,7 @@ async def get_recent_species_observations(
         max_results: Max number of results
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_species_observations(
             region_code, species_code, back=back, hotspot=hotspot,
@@ -130,6 +145,7 @@ async def get_recent_species_observations(
 async def get_recent_nearby_observations(
     lat: float,
     lng: float,
+    ctx: Context,
     dist: int | None = None,
     back: int | None = None,
     cat: str | None = None,
@@ -153,7 +169,7 @@ async def get_recent_nearby_observations(
         sort: Sort order: "date" or "species"
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_nearby_observations(
             lat, lng, dist=dist, back=back, cat=cat, hotspot=hotspot,
@@ -170,6 +186,7 @@ async def get_recent_nearby_species_observations(
     species_code: str,
     lat: float,
     lng: float,
+    ctx: Context,
     dist: int | None = None,
     back: int | None = None,
     cat: str | None = None,
@@ -194,7 +211,7 @@ async def get_recent_nearby_species_observations(
         sort: Sort order: "date" or "species"
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_nearby_species_observations(
             species_code, lat, lng, dist=dist, back=back, cat=cat,
@@ -211,6 +228,7 @@ async def get_nearest_species_observations(
     species_code: str,
     lat: float,
     lng: float,
+    ctx: Context,
     dist: int | None = None,
     back: int | None = None,
     hotspot: bool | None = None,
@@ -231,7 +249,7 @@ async def get_nearest_species_observations(
         max_results: Max number of results
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_nearest_species_observations(
             species_code, lat, lng, dist=dist, back=back, hotspot=hotspot,
@@ -247,6 +265,7 @@ async def get_nearest_species_observations(
 async def get_recent_nearby_notable_observations(
     lat: float,
     lng: float,
+    ctx: Context,
     dist: int | None = None,
     back: int | None = None,
     detail: str | None = None,
@@ -266,7 +285,7 @@ async def get_recent_nearby_notable_observations(
         max_results: Max number of results
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_nearby_notable_observations(
             lat, lng, dist=dist, back=back, detail=detail, hotspot=hotspot,
@@ -283,6 +302,7 @@ async def get_historic_observations(
     year: int,
     month: int,
     day: int,
+    ctx: Context,
     cat: str | None = None,
     detail: str | None = None,
     hotspot: bool | None = None,
@@ -306,7 +326,7 @@ async def get_historic_observations(
         rank: Rank by "mrec" (most recent) or "create" (creation date)
         spp_locale: Locale for species common names
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_historic_observations(
             region_code, year, month, day, cat=cat, detail=detail,
@@ -324,6 +344,7 @@ async def get_historic_observations(
 @mcp.tool()
 async def get_recent_checklists(
     region_code: str,
+    ctx: Context,
     max_results: int | None = None,
 ) -> str:
     """Get recent checklists submitted in a region.
@@ -332,7 +353,7 @@ async def get_recent_checklists(
         region_code: eBird region code (e.g. "US-NY")
         max_results: Max number of results (default 10, max 200)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_recent_checklists(region_code, max_results=max_results)
         return _format(data)
@@ -346,6 +367,7 @@ async def get_top_100(
     year: int,
     month: int,
     day: int,
+    ctx: Context,
     ranked_by: str | None = None,
     max_results: int | None = None,
 ) -> str:
@@ -359,7 +381,7 @@ async def get_top_100(
         ranked_by: Rank by "spp" (species count) or "cl" (checklist count)
         max_results: Max number of results (default 100)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_top_100(
             region_code, year, month, day,
@@ -376,6 +398,7 @@ async def get_checklist_feed(
     year: int,
     month: int,
     day: int,
+    ctx: Context,
     sort_key: str | None = None,
     max_results: int | None = None,
 ) -> str:
@@ -389,7 +412,7 @@ async def get_checklist_feed(
         sort_key: Sort by "obs_dt" (observation date) or "creation_dt"
         max_results: Max number of results (default 10, max 200)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_checklist_feed(
             region_code, year, month, day,
@@ -406,6 +429,7 @@ async def get_regional_statistics(
     year: int,
     month: int,
     day: int,
+    ctx: Context,
 ) -> str:
     """Get birding statistics for a region on a given date.
 
@@ -417,7 +441,7 @@ async def get_regional_statistics(
         month: Month (1-12)
         day: Day (1-31)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_regional_statistics(region_code, year, month, day)
         return _format(data)
@@ -428,13 +452,14 @@ async def get_regional_statistics(
 @mcp.tool()
 async def get_species_list(
     region_code: str,
+    ctx: Context,
 ) -> str:
     """Get a list of all species ever observed in a region.
 
     Args:
         region_code: eBird region code (e.g. "US-NY")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_species_list(region_code)
         return _format(data)
@@ -445,13 +470,14 @@ async def get_species_list(
 @mcp.tool()
 async def get_checklist(
     sub_id: str,
+    ctx: Context,
 ) -> str:
     """View a specific checklist by its submission ID.
 
     Args:
         sub_id: Checklist submission ID (e.g. "S12345678")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_checklist(sub_id)
         return _format(data)
@@ -465,6 +491,7 @@ async def get_checklist(
 @mcp.tool()
 async def get_region_hotspots(
     region_code: str,
+    ctx: Context,
     back: int | None = None,
 ) -> str:
     """Get birding hotspots in a region.
@@ -473,7 +500,7 @@ async def get_region_hotspots(
         region_code: eBird region code (e.g. "US-NY", "US-NY-109")
         back: Only hotspots visited in the last N days (1-30)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_region_hotspots(region_code, back=back)
         return _format(data)
@@ -485,6 +512,7 @@ async def get_region_hotspots(
 async def get_nearby_hotspots(
     lat: float,
     lng: float,
+    ctx: Context,
     back: int | None = None,
     dist: int | None = None,
 ) -> str:
@@ -496,7 +524,7 @@ async def get_nearby_hotspots(
         back: Only hotspots visited in the last N days (1-30)
         dist: Search radius in km (0-500, default 25)
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_nearby_hotspots(lat, lng, back=back, dist=dist)
         return _format(data)
@@ -507,13 +535,14 @@ async def get_nearby_hotspots(
 @mcp.tool()
 async def get_hotspot_info(
     loc_id: str,
+    ctx: Context,
 ) -> str:
     """Get details about a specific hotspot.
 
     Args:
         loc_id: Hotspot location ID (e.g. "L99381")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_hotspot_info(loc_id)
         return _format(data)
@@ -526,6 +555,7 @@ async def get_hotspot_info(
 
 @mcp.tool()
 async def get_taxonomy(
+    ctx: Context,
     cat: str | None = None,
     locale: str | None = None,
     species: str | None = None,
@@ -539,7 +569,7 @@ async def get_taxonomy(
         species: Comma-separated species codes to filter (e.g. "norcar,baleag")
         version: Taxonomy version (e.g. "2024")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_taxonomy(
             cat=cat, locale=locale, species=species, version=version,
@@ -552,13 +582,14 @@ async def get_taxonomy(
 @mcp.tool()
 async def get_taxonomic_forms(
     species_code: str,
+    ctx: Context,
 ) -> str:
     """Get subspecies/forms for a given species.
 
     Args:
         species_code: eBird species code (e.g. "barswa")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_taxonomic_forms(species_code)
         return _format(data)
@@ -567,9 +598,9 @@ async def get_taxonomic_forms(
 
 
 @mcp.tool()
-async def get_taxa_locale_codes() -> str:
+async def get_taxa_locale_codes(ctx: Context) -> str:
     """Get the list of supported locale codes for species common names."""
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_taxa_locale_codes()
         return _format(data)
@@ -578,9 +609,9 @@ async def get_taxa_locale_codes() -> str:
 
 
 @mcp.tool()
-async def get_taxonomy_versions() -> str:
+async def get_taxonomy_versions(ctx: Context) -> str:
     """Get all available taxonomy versions."""
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_taxonomy_versions()
         return _format(data)
@@ -591,6 +622,7 @@ async def get_taxonomy_versions() -> str:
 @mcp.tool()
 async def get_taxonomic_groups(
     species_grouping: str,
+    ctx: Context,
     group_name_locale: str | None = None,
 ) -> str:
     """Get the list of taxonomic groups (e.g. birds, mammals).
@@ -599,7 +631,7 @@ async def get_taxonomic_groups(
         species_grouping: Grouping type: "merlin" or "ebird"
         group_name_locale: Locale for group names (e.g. "en", "es")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_taxonomic_groups(
             species_grouping, group_name_locale=group_name_locale,
@@ -615,6 +647,7 @@ async def get_taxonomic_groups(
 @mcp.tool()
 async def get_region_info(
     region_code: str,
+    ctx: Context,
     region_name_format: str | None = None,
 ) -> str:
     """Get information about a region (name, coordinates, bounds).
@@ -624,7 +657,7 @@ async def get_region_info(
         region_name_format: Name format: "detailed", "detailednoqual", "full",
             "namequal", "nameonly", "revdetailed"
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_region_info(
             region_code, region_name_format=region_name_format,
@@ -638,6 +671,7 @@ async def get_region_info(
 async def get_sub_region_list(
     region_type: str,
     region_code: str,
+    ctx: Context,
 ) -> str:
     """Get sub-regions of a given region.
 
@@ -645,7 +679,7 @@ async def get_sub_region_list(
         region_type: Type of sub-regions: "country", "subnational1", or "subnational2"
         region_code: Parent region code (e.g. "world", "US", "US-NY")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_sub_region_list(region_type, region_code)
         return _format(data)
@@ -656,13 +690,14 @@ async def get_sub_region_list(
 @mcp.tool()
 async def get_adjacent_regions(
     region_code: str,
+    ctx: Context,
 ) -> str:
     """Get regions adjacent to a given region.
 
     Args:
         region_code: eBird region code (e.g. "US-NY")
     """
-    client = _get_client()
+    client = _get_client(ctx)
     try:
         data = await client.get_adjacent_regions(region_code)
         return _format(data)

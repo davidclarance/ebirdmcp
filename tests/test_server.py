@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -34,6 +34,14 @@ from ebirdmcp.server import (
 )
 
 
+def _make_ctx(api_key: str = "test-key") -> MagicMock:
+    ctx = MagicMock()
+    request = MagicMock()
+    request.headers = {"x-ebird-api-key": api_key}
+    ctx.request_context.request = request
+    return ctx
+
+
 def _mock_client(method_name: str, return_value: object):
     mock = AsyncMock()
     mock.close = AsyncMock()
@@ -45,7 +53,7 @@ def _mock_client(method_name: str, return_value: object):
 async def test_get_recent_observations():
     data = [{"speciesCode": "norcar", "comName": "Northern Cardinal"}]
     with _mock_client("get_recent_observations", data):
-        result = await get_recent_observations("US-NY")
+        result = await get_recent_observations("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -53,7 +61,7 @@ async def test_get_recent_observations():
 async def test_get_recent_notable_observations():
     data = [{"speciesCode": "snogoo", "comName": "Snow Goose"}]
     with _mock_client("get_recent_notable_observations", data):
-        result = await get_recent_notable_observations("US-NY")
+        result = await get_recent_notable_observations("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -61,7 +69,7 @@ async def test_get_recent_notable_observations():
 async def test_get_recent_species_observations():
     data = [{"speciesCode": "norcar", "locName": "Central Park"}]
     with _mock_client("get_recent_species_observations", data):
-        result = await get_recent_species_observations("US-NY", "norcar")
+        result = await get_recent_species_observations("US-NY", "norcar", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -69,7 +77,7 @@ async def test_get_recent_species_observations():
 async def test_get_recent_nearby_observations():
     data = [{"speciesCode": "baleag", "lat": 40.7}]
     with _mock_client("get_recent_nearby_observations", data):
-        result = await get_recent_nearby_observations(40.7, -73.9)
+        result = await get_recent_nearby_observations(40.7, -73.9, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -77,7 +85,7 @@ async def test_get_recent_nearby_observations():
 async def test_get_recent_nearby_species_observations():
     data = [{"speciesCode": "norcar"}]
     with _mock_client("get_recent_nearby_species_observations", data):
-        result = await get_recent_nearby_species_observations("norcar", 40.7, -73.9)
+        result = await get_recent_nearby_species_observations("norcar", 40.7, -73.9, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -85,7 +93,7 @@ async def test_get_recent_nearby_species_observations():
 async def test_get_nearest_species_observations():
     data = [{"speciesCode": "norcar", "locName": "Prospect Park"}]
     with _mock_client("get_nearest_species_observations", data):
-        result = await get_nearest_species_observations("norcar", 40.7, -73.9)
+        result = await get_nearest_species_observations("norcar", 40.7, -73.9, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -93,7 +101,7 @@ async def test_get_nearest_species_observations():
 async def test_get_recent_nearby_notable_observations():
     data = [{"speciesCode": "snogoo"}]
     with _mock_client("get_recent_nearby_notable_observations", data):
-        result = await get_recent_nearby_notable_observations(40.7, -73.9)
+        result = await get_recent_nearby_notable_observations(40.7, -73.9, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -101,7 +109,7 @@ async def test_get_recent_nearby_notable_observations():
 async def test_get_historic_observations():
     data = [{"speciesCode": "norcar", "obsDt": "2024-01-15"}]
     with _mock_client("get_historic_observations", data):
-        result = await get_historic_observations("US-NY", 2024, 1, 15)
+        result = await get_historic_observations("US-NY", 2024, 1, 15, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -109,7 +117,7 @@ async def test_get_historic_observations():
 async def test_get_recent_checklists():
     data = [{"subId": "S12345", "loc": {"name": "Central Park"}}]
     with _mock_client("get_recent_checklists", data):
-        result = await get_recent_checklists("US-NY")
+        result = await get_recent_checklists("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -117,7 +125,7 @@ async def test_get_recent_checklists():
 async def test_get_top_100():
     data = [{"userDisplayName": "birder1", "numSpecies": 50}]
     with _mock_client("get_top_100", data):
-        result = await get_top_100("US-NY", 2024, 5, 10)
+        result = await get_top_100("US-NY", 2024, 5, 10, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -125,7 +133,7 @@ async def test_get_top_100():
 async def test_get_checklist_feed():
     data = [{"subId": "S12345"}]
     with _mock_client("get_checklist_feed", data):
-        result = await get_checklist_feed("US-NY", 2024, 5, 10)
+        result = await get_checklist_feed("US-NY", 2024, 5, 10, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -133,7 +141,7 @@ async def test_get_checklist_feed():
 async def test_get_regional_statistics():
     data = {"numSpecies": 150, "numChecklists": 200}
     with _mock_client("get_regional_statistics", data):
-        result = await get_regional_statistics("US-NY", 2024, 5, 10)
+        result = await get_regional_statistics("US-NY", 2024, 5, 10, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -141,7 +149,7 @@ async def test_get_regional_statistics():
 async def test_get_species_list():
     data = ["norcar", "baleag", "amecro"]
     with _mock_client("get_species_list", data):
-        result = await get_species_list("US-NY")
+        result = await get_species_list("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -149,7 +157,7 @@ async def test_get_species_list():
 async def test_get_checklist():
     data = {"subId": "S12345", "obs": []}
     with _mock_client("get_checklist", data):
-        result = await get_checklist("S12345")
+        result = await get_checklist("S12345", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -157,7 +165,7 @@ async def test_get_checklist():
 async def test_get_region_hotspots():
     data = [{"locId": "L99381", "locName": "Central Park"}]
     with _mock_client("get_region_hotspots", data):
-        result = await get_region_hotspots("US-NY")
+        result = await get_region_hotspots("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -165,7 +173,7 @@ async def test_get_region_hotspots():
 async def test_get_nearby_hotspots():
     data = [{"locId": "L99381", "locName": "Central Park"}]
     with _mock_client("get_nearby_hotspots", data):
-        result = await get_nearby_hotspots(40.7, -73.9)
+        result = await get_nearby_hotspots(40.7, -73.9, _make_ctx())
     assert json.loads(result) == data
 
 
@@ -173,7 +181,7 @@ async def test_get_nearby_hotspots():
 async def test_get_hotspot_info():
     data = {"locId": "L99381", "locName": "Central Park", "lat": 40.78}
     with _mock_client("get_hotspot_info", data):
-        result = await get_hotspot_info("L99381")
+        result = await get_hotspot_info("L99381", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -181,7 +189,7 @@ async def test_get_hotspot_info():
 async def test_get_taxonomy():
     data = [{"speciesCode": "norcar", "comName": "Northern Cardinal"}]
     with _mock_client("get_taxonomy", data):
-        result = await get_taxonomy()
+        result = await get_taxonomy(_make_ctx())
     assert json.loads(result) == data
 
 
@@ -189,7 +197,7 @@ async def test_get_taxonomy():
 async def test_get_taxonomic_forms():
     data = ["barswa1", "barswa2"]
     with _mock_client("get_taxonomic_forms", data):
-        result = await get_taxonomic_forms("barswa")
+        result = await get_taxonomic_forms("barswa", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -197,7 +205,7 @@ async def test_get_taxonomic_forms():
 async def test_get_taxa_locale_codes():
     data = [{"code": "en", "name": "English"}]
     with _mock_client("get_taxa_locale_codes", data):
-        result = await get_taxa_locale_codes()
+        result = await get_taxa_locale_codes(_make_ctx())
     assert json.loads(result) == data
 
 
@@ -205,7 +213,7 @@ async def test_get_taxa_locale_codes():
 async def test_get_taxonomy_versions():
     data = [{"authorityVer": 2024, "latest": True}]
     with _mock_client("get_taxonomy_versions", data):
-        result = await get_taxonomy_versions()
+        result = await get_taxonomy_versions(_make_ctx())
     assert json.loads(result) == data
 
 
@@ -213,7 +221,7 @@ async def test_get_taxonomy_versions():
 async def test_get_taxonomic_groups():
     data = [{"groupName": "Birds", "groupOrder": 1}]
     with _mock_client("get_taxonomic_groups", data):
-        result = await get_taxonomic_groups("ebird")
+        result = await get_taxonomic_groups("ebird", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -221,7 +229,7 @@ async def test_get_taxonomic_groups():
 async def test_get_region_info():
     data = {"result": "New York", "bounds": {}}
     with _mock_client("get_region_info", data):
-        result = await get_region_info("US-NY")
+        result = await get_region_info("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -229,7 +237,7 @@ async def test_get_region_info():
 async def test_get_sub_region_list():
     data = [{"code": "US-NY-061", "name": "New York County"}]
     with _mock_client("get_sub_region_list", data):
-        result = await get_sub_region_list("subnational2", "US-NY")
+        result = await get_sub_region_list("subnational2", "US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
@@ -237,13 +245,31 @@ async def test_get_sub_region_list():
 async def test_get_adjacent_regions():
     data = [{"code": "US-CT", "name": "Connecticut"}]
     with _mock_client("get_adjacent_regions", data):
-        result = await get_adjacent_regions("US-NY")
+        result = await get_adjacent_regions("US-NY", _make_ctx())
     assert json.loads(result) == data
 
 
 @pytest.mark.asyncio
+async def test_api_key_from_header():
+    ctx = _make_ctx("my-header-key")
+    from ebirdmcp.server import _get_api_key
+    assert _get_api_key(ctx) == "my-header-key"
+
+
+@pytest.mark.asyncio
+async def test_api_key_falls_back_to_env():
+    ctx = MagicMock()
+    ctx.request_context.request = None
+    with patch.dict("os.environ", {"EBIRD_API_KEY": "env-key"}):
+        from ebirdmcp.server import _get_api_key
+        assert _get_api_key(ctx) == "env-key"
+
+
+@pytest.mark.asyncio
 async def test_missing_api_key():
+    ctx = MagicMock()
+    ctx.request_context.request = None
     with patch.dict("os.environ", {}, clear=True):
-        with pytest.raises(RuntimeError, match="EBIRD_API_KEY"):
-            from ebirdmcp.server import _get_client
-            _get_client()
+        with pytest.raises(RuntimeError, match="eBird API key required"):
+            from ebirdmcp.server import _get_api_key
+            _get_api_key(ctx)

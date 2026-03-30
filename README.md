@@ -5,17 +5,20 @@ MCP server for the [eBird API 2.0](https://documenter.getpostman.com/view/664302
 ## Setup
 
 1. Get an eBird API key at https://ebird.org/api/keygen
-2. Set the `EBIRD_API_KEY` environment variable
+2. Install: `uv sync`
 
-## Install
+## Authentication
 
-```bash
-uv sync
-```
+The server resolves the eBird API key in this order:
+
+1. **`x-ebird-api-key` request header** — each user provides their own key (used for remote/hosted deployments)
+2. **`EBIRD_API_KEY` environment variable** — fallback for local usage
+
+This means hosted deployments don't need a shared key — each connecting client passes their own.
 
 ## Usage
 
-### With Claude Code
+### Local — with Claude Code (stdio)
 
 Add to your MCP config:
 
@@ -32,6 +35,16 @@ Add to your MCP config:
   }
 }
 ```
+
+### Remote — hosted for Claude web / shared use
+
+Run with an HTTP transport:
+
+```bash
+uv run ebirdmcp --transport streamable-http --host 0.0.0.0 --port 8000
+```
+
+Clients connect to `https://your-host/mcp` and pass their eBird API key via the `x-ebird-api-key` header.
 
 ### Standalone
 
