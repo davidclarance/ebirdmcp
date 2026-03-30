@@ -9,7 +9,7 @@ from ebirdmcp.client import EBirdClient
 
 mcp = FastMCP(
     "ebirdmcp",
-    description="MCP server for the eBird API 2.0 — bird observations, hotspots, taxonomy, and regions.",
+    instructions="MCP server for the eBird API 2.0 — bird observations, hotspots, taxonomy, and regions.",
 )
 
 
